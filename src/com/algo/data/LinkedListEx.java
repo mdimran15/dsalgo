@@ -49,6 +49,23 @@ public class LinkedListEx<E> {
         return val;
     }
 
+    public Boolean find(E req) {
+        Boolean flag = false;
+        if (head == null || req == null) {
+            return flag;
+        }
+        Node<E> loc = head;
+        while(loc != null) {
+            if(req == loc.val){
+                flag = true ;
+            }
+            loc = loc.next ;
+        }
+
+        return flag;
+
+    }
+
     private Node<E> createNode(E val) {
         Node<E> node = new Node<>(val, null);
         return node;
