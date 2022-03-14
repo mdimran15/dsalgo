@@ -1,0 +1,229 @@
+IoC - Inversion of controll
+
+Inversion of Control is a principle in software engineering which transfers the control of objects or portions of a program to a container or framework
+We most often use it in the context of object-oriented programming.
+
+We can achieve Inversion of Control through various mechanisms such as:
+Strategy design pattern, Service Locator pattern, Factory pattern, and Dependency Injection (DI).
+
+ApplicationContext interface having three impl class
+ClassPathXmlApplicationContext and FileSystemXmlApplicationContext for standalone applications, and WebApplicationContext for web applications
+ApplicationContext context  = new ClassPathXmlApplicationContext("applicationContext.xml");
+
+Dependency Injection in Spring can be done through constructors, setters or fields.
+
+1. constructor based DI : Spring resolves each argument primarily by type, followed by name of the attribute, and index for disambiguation
+
+example
+
+@Configuration // indicate config file and where we define beans
+One configuration class can import any number of other configuration classes
+@Import({ DataSourceConfig.class, TransactionConfig.class })
+@EnableAutoConfiguration
+@ComponentScan("com.baeldung.constructordi") // scan the package we can use exclude
+
+public class Config {
+
+    @Bean (here instance name will be engine)
+	@Bean({"b1", "b2"}) // bean available as 'b1' and 'b2', but not 'myBean'
+	@Profile("production")
+    @Scope("prototype")
+	@Lazy //only has an actual effect in case of the default singleton scope
+	@DependsOn
+    public Engine engine() {
+        return new Engine("v8", 5);
+    }
+
+    @Bean
+    public Transmission transmission() {
+        return new Transmission("sliding");
+    }
+}
+@Component
+public class Car {
+
+    @Autowired // from 4.3 onward we can omit autowired if we have single single constructor 
+    public Car(Engine engine, Transmission transmission) {
+        this.engine = engine;
+        this.transmission = transmission;
+    }
+}
+
+We use the @Bean annotation on a method to define a bean. If we don't specify a custom name, then the bean name will default to the method name.
+For a bean with the default singleton scope, Spring first checks if a cached instance of the bean already exists, and only creates a new one if it doesn't. If we're using the prototype scope, the container returns a new bean instance for each method call.
+
+2. Setter-Based Dependency Injection
+
+For setter-based DI, the container will call setter methods of our class after invoking a no-argument constructor or no-argument static factory method to instantiate the bean. We can combine constructor-based and setter-based types of injection for the same bean. The Spring documentation recommends using constructor-based injection for mandatory dependencies, and setter-based injection for optional ones.
+
+
+@Bean
+public Store store() {
+    Store store = new Store();
+    store.setItem(item1()); item1 is bean in container
+    return store;
+}
+
+3. Field-Based Dependency Injection
+we can inject the dependencies by marking them with an @Autowired annotation. While constructing the Store object, if there's no constructor or setter method to inject the Item bean, the container will use reflection to inject Item into Store.
+
+public class Store {
+    @Autowired
+    private Item item; 
+}
+
+Autowiring Dependencies
+@Bean(autowire = Autowire.BY_TYPE) autowire byname , bytype and no :- this means no autowiring is used for the bean and we have to explicitly name the dependencies
+public class Store {
+    
+    private Item item; // we can add @Autowired also here this will be bytype if there is multiple type we can use @Qualifier("myitem")
+
+    public setItem(Item item){
+        this.item = item;    
+    }
+}
+
+Lazy Initialized Beans :- By default, the container creates and configures all singleton beans during initialization. To avoid this, we can use the lazy-init attribute with value true on the bean configuration. Consequently, the item1 bean will only be initialized when it's first requested, and not at startup. The advantage of this is faster initialization time, but the trade-off is that we won't discover any configuration errors until after the bean is requested, which could be several hours or even days after the application has already been running.
+
+SpringBootApplication
+
+@SpringBootApplication is syntactic sugar(@Configuration, @EnableAutoConfiguration and @ComponentScan)
+Indicates a configuration class that declares one or more @Bean methods and also triggers auto-configuration and component scanning. This is a convenience annotation that is equivalent to declaring @Configuration, @EnableAutoConfiguration and @ComponentScan. spring Boot application, it will automatically scan the components in the current package and its sub-packages. Thus it will register them in Spring's Application Context, and allow us to inject beans using @Autowired. we can use autowiring on properties, setters, and constructors
+
+@Autowired on Properties : We can annotate a property using @Autowired. This eliminates the need for getters and setters.
+@Component
+public class FooService {  
+    @Autowired
+    private FooFormatter fooFormatter; // 
+}
+@Component("fooFormatter")
+public class FooFormatter {}
+
+@Autowired on Setters :- the setter method is called with the instance of FooFormatter when FooService is created:
+
+public class FooService { // fooservice is component.
+    private FooFormatter fooFormatter;
+    @Autowired
+    public void setFooFormatter(FooFormatter fooFormatter) {
+        this.fooFormatter = fooFormatter;
+    }
+}
+
+@Autowired on Constructors :- 
+
+public class FooService {
+    private FooFormatter fooFormatter;
+    @Autowired // @Autowired(required = false) no injection
+    public FooService(FooFormatter fooFormatter) {
+        this.fooFormatter = fooFormatter;
+    }
+}
+
+@Primary : 
+
+@Configuration
+public class Config {// Spring throws NoUniqueBeanDefinitionException if we try to run the application. because same bean register here multiple time
+
+    @Bean
+    public Employee JohnEmployee() {
+        return new Employee("John");
+    }
+
+    @Bean // we can use @Primary to avoid error. privary can use with @component also
+    public Employee TonyEmployee() {
+        return new Employee("Tony");
+    }
+}
+
+Order in spring :- @Order in various use cases – where the ordering of the auto-wired components matter. One example is the Spring's request filters
+ 
+@Component
+@Order(1)
+public class Excellent implements Rating{}
+
+@Component
+@Order(2)
+public class Good implements Rating {}
+
+@Component
+@Order(Ordered.LOWEST_PRECEDENCE)
+public class Average implements Rating {}
+
+public class RatingRetrieverUnitTest { 
+@Autowired
+private List<Rating> ratings; it will be in order
+}
+
+
+---Bean Scope---
+
+The scope of a bean defines the life cycle and visibility of that bean in the contexts we use it
+
+singleton
+prototype
+request
+session
+application
+websocket
+The last four scopes mentioned, request, session, application and websocket, are only available in a web-aware application.
+
+Singleton :- When we define a bean with the singleton scope, the container creates a single instance of that bean; all requests for that bean name will return the same object, which is cached. Any modifications to the object will be reflected in all references to the bean. This scope is the default value if no other scope is specified.
+@Bean
+@Scope("singleton") or @Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
+public Person personSingleton() {
+    return new Person();
+}
+
+Prototype :- A bean with the prototype scope will return a different instance every time it is requested from the container. It is defined by setting the value prototype to the @Scope annotation in the bean definition
+
+@RequestScope/ @SwssionScope / @ApplicationScope / @WebScoketScope
+The request scope creates a bean instance for a single HTTP request, while the session scope creates a bean instance for an HTTP Session.
+The application scope creates the bean instance for the lifecycle of a ServletContext, and the websocket scope creates it for a particular WebSocket session.
+@Bean
+@Scope(value = WebApplicationContext.SCOPE_REQUEST, proxyMode = ScopedProxyMode.TARGET_CLASS) or @RequestScope
+public HelloMessageGenerator requestScopedBean() {
+    return new HelloMessageGenerator();
+}
+
+*** Collection Injecting
+
+public class CollectionsBean {
+
+    @Autowired
+    private List<String> nameList; 
+
+    public void printNameList() {
+        System.out.println(nameList);
+    }
+}
+
+@Configuration
+public class CollectionConfig {
+
+    @Bean
+    public CollectionsBean getCollectionsBean() {
+        return new CollectionsBean();
+    }
+
+    @Bean
+    public List<String> nameList() {
+        return Arrays.asList("John", "Adam", "Harry");
+    }
+}
+//we can have setter method as well and injection type setter and for constructor injection tyoe constructor
+@Configuration
+public class CollectionConfig {
+
+    @Bean
+    public CollectionsBean getCollectionsBean() {
+        return new CollectionsBean(new ArrayList()); // construcot
+    }
+
+   @Bean
+    public CollectionsBean getCollectionsBean() { // setter
+	List nameList = Arrays.asList();
+	colBean = new CollectionsBean();
+colBean.setNameList(nameList);	
+        return colBean;
+    }
+}
