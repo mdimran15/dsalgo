@@ -1,3 +1,10 @@
+Microsoft Azure 
+1. Azure Active Directory
+2. Azure CDN
+traffic managrer
+log analytics aazure
+ngnix routing
+
 IoC - Inversion of controll
 
 Inversion of Control is a principle in software engineering which transfers the control of objects or portions of a program to a container or framework
@@ -14,8 +21,6 @@ Dependency Injection in Spring can be done through constructors, setters or fiel
 
 1. constructor based DI : Spring resolves each argument primarily by type, followed by name of the attribute, and index for disambiguation
 
-example
-
 @Configuration // indicate config file and where we define beans
 One configuration class can import any number of other configuration classes
 @Import({ DataSourceConfig.class, TransactionConfig.class })
@@ -24,12 +29,12 @@ One configuration class can import any number of other configuration classes
 
 public class Config {
 
-    @Bean (here instance name will be engine)
+    @Bean (here instance name will be same as method name "engine")
 	@Bean({"b1", "b2"}) // bean available as 'b1' and 'b2', but not 'myBean'
 	@Profile("production")
     @Scope("prototype")
-	@Lazy //only has an actual effect in case of the default singleton scope
-	@DependsOn
+	@Lazy 
+	@DependsOn //only has an actual effect in case of the default singleton scope
     public Engine engine() {
         return new Engine("v8", 5);
     }
@@ -42,7 +47,7 @@ public class Config {
 @Component
 public class Car {
 
-    @Autowired // from 4.3 onward we can omit autowired if we have single single constructor 
+    @Autowired // from 4.3 onward we can omit autowired if we have single constructor 
     public Car(Engine engine, Transmission transmission) {
         this.engine = engine;
         this.transmission = transmission;
@@ -129,7 +134,7 @@ public class Config {// Spring throws NoUniqueBeanDefinitionException if we try 
         return new Employee("John");
     }
 
-    @Bean // we can use @Primary to avoid error. privary can use with @component also
+    @Bean // we can use @Primary to avoid error. primary can use with @component also
     public Employee TonyEmployee() {
         return new Employee("Tony");
     }
@@ -225,5 +230,41 @@ public class CollectionConfig {
 	colBean = new CollectionsBean();
 colBean.setNameList(nameList);	
         return colBean;
+    }
+}
+
+***Class Loader in Java***
+
+Java classes are loaded by an instance of java.lang.ClassLoader. However, class loaders are classes themselves. So the question is, who loads the java.lang.ClassLoader itself? This is where the bootstrap or primordial class loader comes into play. This bootstrap class loader is part of the core JVM and is written in native code. if we print ArrayList.class.getClassLoader() it will print null as its a native code.
+
+BootStrap ClassLoader (load class of jre/lib/rt.jar) is parent of Extension ClassLoader is parent of and Application Class Loader
+Extension ClassLoader (load class of jre/lib/ext or java.ext.dirs)
+Application ClassLoader (load class form ClASSPATH, -cp, or -classpath)
+java -verbose:class Demo   for checking loading sequence of class
+class loading when .. new byte code is executed or When the byte code makes a static reference to a class. For example, System.out.
+Classes are statically loaded with "new" operator. Dynamic class loading invokes the functions of a class loader at run time by using 
+Class.forName() method.
+
+loadClass() and Class.forName()
+The loadClass() method loads only the class but does not initialize the object. While Class.forName() method initialize the object after loading it. For example, if you are using ClassLoader.loadClass() to load the JDBC driver, class loader does not allow to load JDBC driver.
+The java.lang.Class.forName() method returns the Class Object coupled with the class or interfaces with the given string name. It throws ClassNotFoundException if the class is not found.
+
+default and static 
+Intrafce.static
+class.default
+if same default method in parent then Interface1.super.m() Interface2.super.m() to solve ambugity
+
+Facade Design Pattern :  like API gateway which internally calls many microsservices, security, loadbalancing. or computer start also its doinf lots of work behind the scene
+
+@Configuration
+@ConditionalOnClass({ObjectMapper.class}) Spring Boot auto-configuration includes JacksonAutoConfiguration, if it finds Object mapper in the classpath
+public class JacksonAutoConfiguration {
+ 
+    // additional configuration code 
+    @Bean
+    @Primary
+    @ConditionalOnMissingBean // it will create the ObjectMapper bean if it already contains no bean of type ObjectMapper in the ApplicationContext. The other annotation @ConditionalOnBean works opposite to the @ConditionalOnMissingBean annotation.
+    public ObjectMapper jacksonObjectMapper(Jackson2ObjectMapperBuilder builder) {
+        return builder.createXmlMapper(false).build();
     }
 }
