@@ -4,6 +4,13 @@ Microsoft Azure
 traffic managrer
 log analytics aazure
 ngnix routing
+BiFunction<String, Integer, Employee> biFun=(name,age) -> new Employee(name, age);
+List<Emp> list = new ArrayList<>();
+list.add(biFun.apply("imr",30));
+
+BiConsumer<Emp, Integer> biCon = (emp,increment) -> emp.Age = emp.Age+increment;
+for(EMp e : list)
+e.accept(e,10);
 
 IoC - Inversion of controll
 
